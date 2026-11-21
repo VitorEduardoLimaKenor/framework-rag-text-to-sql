@@ -1,6 +1,7 @@
 """F12 — Diagramas adicionais do Capítulo 2 e linha do tempo do Capítulo 3.
 
-Gera quatro figuras:
+Gera cinco figuras:
+  em_x_ex                 EM e EX em dois casos reais do teste (Seção 2.5.2)
   esquema_x_demonstracoes recuperação de esquema (ilustrativa) e recuperação de demonstrações (Seção 2.3.2)
   selecao_demonstracoes   a mesma pergunta e duas demonstrações candidatas: uma mais parecida na pergunta,
                           outra com a mesma estrutura de consulta (Seção 2.5.4)
@@ -219,6 +220,60 @@ def esquema_x_demonstracoes(saida: Path) -> None:
     estilo.salvar(fig, saida, "esquema_x_demonstracoes")
 
 
+REGISTRO_TESTE = RAIZ / "resultados/confirmatorio/artifacts/runs-v2/confirmatorio-test-a99f7394fedc945b-fb350ed2.jsonl"
+# dois casos reais do teste em português: uma predição equivalente escrita de outro modo (EM recusa, EX aceita) e um
+# falso positivo da EX (colunas erradas, mas as duas consultas devolvem resultado vazio neste banco)
+CASO_EQUIV = ("spider_train_spider_4214", "C2")
+CASO_FALSO = ("spider_train_spider_3430", "C0")
+
+
+def em_x_ex(saida: Path) -> None:
+    alvo = {CASO_EQUIV, CASO_FALSO}
+    regs = {}
+    with REGISTRO_TESTE.open(encoding="utf-8") as fh:
+        for ln in fh:
+            r = json.loads(ln)
+            if r["lang"] == "pt" and (r["example_id"], r["condition"]) in alvo:
+                regs[(r["example_id"], r["condition"])] = r
+    eq, fp = regs[CASO_EQUIV], regs[CASO_FALSO]
+    assert eq["ex_correct"] and not eq["em_oficial"] and not eq["ex_ambos_vazios"]
+    assert fp["ex_correct"] and not fp["em_oficial"] and fp["ex_ambos_vazios"]
+    fig, ax = eixos(estilo.LARGURA, 3.6, ylim=(0, 64))
+    aspas = ("“", "”")
+
+    def quebra_sql(s: str) -> str:
+        import re
+        s = " ".join(s.split()).replace(" ,", ",")
+        for kw in (" FROM ", " JOIN ", " ON ", " WHERE "):
+            s = s.replace(kw, "\n  " + kw.strip() + " ")
+        # AND só quebra quando não fecha um BETWEEN
+        s = re.sub(r"(?<!BETWEEN '\d{4}-\d{2}-\d{2}') AND ", "\n  AND ", s)
+        return s.replace(" BETWEEN ", "\n    BETWEEN ")
+
+    def painel_caso(x0, titulo, r, veredito_em, veredito_ex, obs):
+        painel(ax, x0, 0, 48.5, 63.5, titulo)
+        ax.text(x0 + 2, 57.2, textwrap.fill(aspas[0] + r["question_raw"] + aspas[1], 58), ha="left", va="top",
+                fontsize=6.4, color=estilo.TINTA, style="italic", linespacing=1.2)
+        for y, rot, sql, cor in ((46.5, "Referência", r["gold_sql"], "#ffffff"),
+                                 (28.5, "Predição", r["generated_sql"], "#ffffff")):
+            caixa(ax, x0 + 2, y - 15.5, 44.5, 16.5, "", cor=cor)
+            ax.text(x0 + 3.2, y - 0.4, rot, ha="left", va="top", fontsize=6.4, fontweight="bold",
+                    color=estilo.TINTA_2)
+            ax.text(x0 + 3.2, y - 3.3, quebra_sql(sql), ha="left", va="top", fontsize=5.6, family=MONO,
+                    color=estilo.TINTA, linespacing=1.25)
+        for i, (metrica, ok) in enumerate((("EM", veredito_em), ("EX", veredito_ex))):
+            cx = x0 + 2 + i * 22.5
+            caixa(ax, cx, 5.5, 21.5, 5.6, f"{metrica}: {'correta' if ok else 'incorreta'}", fs=6.8, negrito=True,
+                  cor=REALCE_AZUL if ok else REALCE, borda=estilo.AZUL if ok else estilo.LARANJA, lw=1.0)
+        rotulo(ax, x0 + 24.25, 2.6, obs, fs=6.0, italico=True)
+
+    painel_caso(0, "(a) Equivalente, escrita de outro modo", eq, False, True,
+                f"mesmo resultado ({eq['ex_linhas_ref']} linhas): a EM recusa uma consulta correta")
+    painel_caso(51.5, "(b) Errada, mas com o mesmo resultado", fp, False, True,
+                "coluna errada; as duas devolvem resultado vazio")
+    estilo.salvar(fig, saida, "em_x_ex")
+
+
 TRABALHOS = [  # (ano, eixo, nome, descrição curta) — eixos como no Capítulo 3; a ordem define o empilhamento
     (2023, 0, "Chang e Fosler-\nLussier (2023a)", "exemplos do banco\nno prompt"),
     (2023, 0, "ODIS (Chang e Fosler-\nLussier, 2023b)", "a distribuição das\nconsultas SQL importa"),
@@ -285,6 +340,7 @@ def linha_do_tempo(saida: Path) -> None:
 def main(saida: Path) -> None:
     estilo.aplicar()
     esquema_x_demonstracoes(saida)
+    em_x_ex(saida)
     selecao_demonstracoes(saida)
     comparacao_pareada(saida)
     linha_do_tempo(saida)

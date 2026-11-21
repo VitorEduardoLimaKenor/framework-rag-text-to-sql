@@ -494,7 +494,7 @@ def main(val: Path, teste: Path | None, saida: Path) -> None:
         arquivos["teste_idiomas"] = teste_idiomas(at)
         arquivos["teste_custo"] = teste_custo(at)
         arquivos["teste_erros"] = teste_erros(at)
-        arquivos["teste_h3"] = teste_h3(at)
+        # H3 aparece só como figura (scripts/figuras/resultados.py, f08_h3), com as mesmas grandezas
         arquivos["teste_literal"] = teste_literal(at)
         arquivos["teste_em"] = teste_em(at)
     for nome, texto in arquivos.items():

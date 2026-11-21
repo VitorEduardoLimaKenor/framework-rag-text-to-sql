@@ -213,7 +213,7 @@ def f07_custo(a: dict, saida: Path, sufixo: str) -> None:
 def f08_h3(a: dict, saida: Path, sufixo: str) -> None:
     """Acurácia com e sem acerto estrutural, por condição (PT)."""
     conds = [c for c in ("C1", "C2", "C3", "C4") if f"{c}|pt" in a["h3"]]
-    fig, ax = plt.subplots(figsize=(estilo.LARGURA, 0.55 * len(conds) + 1.2))
+    fig, ax = plt.subplots(figsize=(estilo.LARGURA, 0.75 * len(conds) + 1.2))
     for i, c in enumerate(conds):
         h = a["h3"][f"{c}|pt"]
         t = h["tabela"]
@@ -228,17 +228,20 @@ def f08_h3(a: dict, saida: Path, sufixo: str) -> None:
         if com is not None:
             ax.plot([com], [i], marker="o", markersize=7.5, color=estilo.AZUL, markeredgecolor="#ffffff",
                     markeredgewidth=1.0, zorder=3, linestyle="none")
-        ic = h.get("ic95")
-        texto = (f"{_sinal(h['diferenca_pp'])} pp  [{_sinal(ic[0])}; {_sinal(ic[1])}]" if h.get("diferenca_pp") is not None
-                 and ic else "—")
-        ax.text(103, i, f"{texto}\ncom: n = {n_com} · sem: n = {n_sem}", ha="left", va="center", fontsize=7.6,
-                linespacing=1.4)
+        ic, ica = h.get("ic95"), h.get("ic95_ajustada")
+        bruta = (f"bruta: {_sinal(h['diferenca_pp'])}  [{_sinal(ic[0])}; {_sinal(ic[1])}]"
+                 if h.get("diferenca_pp") is not None and ic else "bruta: —")
+        aj = h.get("diferenca_ajustada_dificuldade_pp")
+        ajust = (f"ajustada: {_sinal(aj)}  [{_sinal(ica[0])}; {_sinal(ica[1])}]" if aj is not None and ica
+                 else "ajustada: —")
+        ax.text(91.5, i, f"{bruta}\n{ajust}\ncom: n = {n_com} · sem: n = {n_sem}", ha="left", va="center",
+                fontsize=7.2, linespacing=1.35)
     ax.set_yticks(range(len(conds)))
     ax.set_yticklabels(conds)
     ax.invert_yaxis()
     ax.set_ylim(len(conds) - 0.5, -0.5)
-    ax.set_xlim(0, 100)
-    ax.set_xticks([0, 20, 40, 60, 80, 100])
+    ax.set_xlim(55, 90)
+    ax.set_xticks([55, 60, 65, 70, 75, 80, 85, 90])
     ax.set_xlabel("Acurácia de execução (%)", loc="left")
     ax.xaxis.grid(True, zorder=0)
     ax.set_axisbelow(True)
@@ -252,7 +255,7 @@ def f08_h3(a: dict, saida: Path, sufixo: str) -> None:
     ]
     ax.legend(handles=marcas, ncol=2, loc="lower left", bbox_to_anchor=(0.0, 1.0), frameon=False,
               columnspacing=1.6, borderaxespad=0.2, handletextpad=0.3)
-    ax.text(103, -0.95, "Diferença e IC de 95%", ha="left", va="center", fontsize=7.6, color=estilo.TINTA_2,
+    ax.text(91.5, -0.95, "Diferença (pp) e IC de 95%", ha="left", va="center", fontsize=7.6, color=estilo.TINTA_2,
             fontweight="bold")
     fig.subplots_adjust(right=0.60)
     estilo.salvar(fig, saida, f"acerto_estrutural_h3{sufixo}")
