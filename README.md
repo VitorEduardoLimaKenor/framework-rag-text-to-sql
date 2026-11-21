@@ -125,7 +125,7 @@ Para gerar tudo de novo com GPU, use `notebooks/confirmatorio.ipynb` (detalhes e
   year   = {2026},
   note   = {Trabalho de Conclusão de Curso (Bacharelado em Ciência da Computação),
             Universidade Tecnológica Federal do Paraná, Santa Helena},
-  howpublished = {\url{https://github.com/VitorEduardoLimaKenor/TCC2}}
+  howpublished = {\url{https://github.com/VitorEduardoLimaKenor/framework-rag-text-to-sql}}
 }
 ```
 
