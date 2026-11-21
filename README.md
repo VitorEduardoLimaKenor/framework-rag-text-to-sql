@@ -224,6 +224,7 @@ python scripts/figuras/f10_evolucao_text_sql.py <Images>   # Figura 1, adaptada 
 python scripts/figuras/f11_metodologia.py <Images>        # Cap. 4: fluxo de C4, prompt real (confere o SHA-256), protocolo
 python scripts/figuras/f12_fundamentos_extra.py <Images>  # Caps. 2 e 3: esquema × demonstrações, seleção, McNemar/bootstrap, linha do tempo
 python scripts/quadro_assinatura.py <Textual/tabelas/quadro_assinatura.tex>   # Quadro das 12 características, com os pesos do código
+python scripts/apendices.py <Post-Textual>   # Apêndices A (prompt, SHA-256 conferido) e B (bancos)
 python scripts/tabela_exemplo.py <exemplo-mecanismo.json> <Textual/tabelas/exemplo_mecanismo.tex>
 python scripts/figuras/f02_particao.py data/spider <manifest.json> <Images>
 python scripts/perfil_dificuldade.py data/spider <manifest.json> perfil.json
