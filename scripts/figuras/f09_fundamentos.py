@@ -60,7 +60,7 @@ def esquema_rag(saida: Path) -> None:
     d.caixa(ax, 1.5, 40.5, 23, 10.5, "Base de itens\n(documentos, esquema\nou exemplos resolvidos)", fs=6.5)
     d.caixa(ax, 28, 41.5, 18, 8.5, "Modelo de\nembeddings", cor=estilo.CINZA_MEDIO, fs=7.0, negrito=True)
     d.cilindro(ax, 47.5, 39.6, 11, 12.5)
-    d.rotulo(ax, 66.5, 45.8, "índice vetorial\n(vetores e metadados)", fs=6.6, ha="center", cor=estilo.TINTA)
+    d.rotulo(ax, 61.0, 45.8, "índice vetorial\n(vetores e metadados)", fs=6.6, ha="left", cor=estilo.TINTA)
     d.seta(ax, 24.5, 45.75, 28, 45.75)
     d.seta(ax, 46, 45.75, 47.5, 45.75)
     # consulta

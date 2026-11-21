@@ -62,7 +62,7 @@ def selecao_demonstracoes(saida: Path) -> None:
     aspas = ("“", "”")
 
     # pergunta de teste
-    caixa(ax, 21, 50, 58, 15, "", cor="#ffffff")
+    caixa(ax, 14, 50, 72, 15, "", cor="#ffffff")
     rotulo(ax, 50, 62.6, "Pergunta a responder", fs=7.4, negrito=True, cor=estilo.TINTA)
     rotulo(ax, 50, 58.3, aspas[0] + p["question_pt"] + aspas[1], fs=7.2, cor=estilo.TINTA)
     rotulo(ax, 50, 54.6, "consulta esperada (desconhecida no momento da geração):", fs=6.2, italico=True)
@@ -83,11 +83,11 @@ def selecao_demonstracoes(saida: Path) -> None:
               "mas outra estrutura: ordenação e limite,\nsem filtro")
     candidata(55, REALCE, estilo.LARANJA, "Demonstração B: mesma estrutura", b,
               "outro assunto (pressão ao nível do mar),\nmas a mesma estrutura: uma tabela\ne um filtro em WHERE")
-    seta(ax, 35, 50, 22.5, 36.6, cor=estilo.AZUL)
-    seta(ax, 65, 50, 77.5, 36.6, cor=estilo.LARANJA)
-    rotulo(ax, 25.5, 44.5, "preferida pela similaridade\nda pergunta delexicalizada", fs=6.6, ha="right",
+    seta(ax, 30, 50, 22.5, 36.6, cor=estilo.AZUL)
+    seta(ax, 70, 50, 77.5, 36.6, cor=estilo.LARANJA)
+    rotulo(ax, 24.0, 44.5, "preferida pela similaridade\nda pergunta delexicalizada", fs=6.6, ha="right",
            cor=estilo.AZUL)
-    rotulo(ax, 74.5, 44.5, "preferida pela similaridade\nestrutural", fs=6.6, ha="left", cor=estilo.LARANJA)
+    rotulo(ax, 76.0, 44.5, "preferida pela similaridade\nestrutural", fs=6.6, ha="left", cor=estilo.LARANJA)
     estilo.salvar(fig, saida, "selecao_demonstracoes")
 
 
@@ -252,14 +252,14 @@ def em_x_ex(saida: Path) -> None:
 
     def painel_caso(x0, titulo, r, veredito_em, veredito_ex, obs):
         painel(ax, x0, 0, 48.5, 63.5, titulo)
-        ax.text(x0 + 2, 57.2, textwrap.fill(aspas[0] + r["question_raw"] + aspas[1], 58), ha="left", va="top",
+        ax.text(x0 + 2, 57.2, textwrap.fill(aspas[0] + r["question_raw"] + aspas[1], 50), ha="left", va="top",
                 fontsize=6.4, color=estilo.TINTA, style="italic", linespacing=1.2)
         for y, rot, sql, cor in ((46.5, "Referência", r["gold_sql"], "#ffffff"),
                                  (28.5, "Predição", r["generated_sql"], "#ffffff")):
             caixa(ax, x0 + 2, y - 15.5, 44.5, 16.5, "", cor=cor)
             ax.text(x0 + 3.2, y - 0.4, rot, ha="left", va="top", fontsize=6.4, fontweight="bold",
                     color=estilo.TINTA_2)
-            ax.text(x0 + 3.2, y - 3.3, quebra_sql(sql), ha="left", va="top", fontsize=5.6, family=MONO,
+            ax.text(x0 + 3.2, y - 3.3, quebra_sql(sql), ha="left", va="top", fontsize=5.2, family=MONO,
                     color=estilo.TINTA, linespacing=1.25)
         for i, (metrica, ok) in enumerate((("EM", veredito_em), ("EX", veredito_ex))):
             cx = x0 + 2 + i * 22.5
@@ -268,7 +268,7 @@ def em_x_ex(saida: Path) -> None:
         rotulo(ax, x0 + 24.25, 2.6, obs, fs=6.0, italico=True)
 
     painel_caso(0, "(a) Equivalente, escrita de outro modo", eq, False, True,
-                f"mesmo resultado ({eq['ex_linhas_ref']} linhas): a EM recusa uma consulta correta")
+                f"mesmo resultado ({eq['ex_linhas_ref']} linhas): EM recusa consulta correta")
     painel_caso(51.5, "(b) Errada, mas com o mesmo resultado", fp, False, True,
                 "coluna errada; as duas devolvem resultado vazio")
     estilo.salvar(fig, saida, "em_x_ex")
