@@ -1,16 +1,137 @@
-# Recuperação de demonstrações orientada à estrutura para Text-to-SQL
+# Um Framework RAG para Text-to-SQL
 
-Código do experimento da monografia. Compara cinco condições de seleção de
-demonstrações em português brasileiro e em inglês, sob esquema, número de
-exemplos e orçamento de contexto constantes.
+**Avaliação da Recuperação Semântica e Estrutural de Demonstrações em Português Brasileiro e Inglês**
 
-| Condição | Demonstrações no *prompt* | Papel |
+Trabalho de Conclusão de Curso · Bacharelado em Ciência da Computação · Universidade Tecnológica Federal do Paraná (UTFPR), câmpus Santa Helena · 2026
+
+**Autor:** Vitor Eduardo de Lima Kenor · **Orientador:** Prof. Dr. Thiago França Naves (LAMIA)
+
+---
+
+## Sobre o trabalho
+
+Sistemas *Text-to-SQL* transformam perguntas em linguagem natural em consultas SQL. Modelos de linguagem
+de larga escala (LLMs) acertam mais quando recebem, no *prompt*, alguns exemplos resolvidos do próprio
+banco (pares pergunta–SQL, chamados **demonstrações**). A pergunta é: **como escolher esses exemplos?**
+
+A prática comum é buscar as perguntas mais parecidas com a do usuário (similaridade semântica). A literatura,
+porém, indica que o que mais ajuda é a **estrutura da consulta SQL** — e quase toda essa evidência é em inglês.
+Este trabalho testa, de forma controlada, se escolher exemplos pela estrutura da consulta funciona melhor do
+que escolher pela pergunta, em **português brasileiro e em inglês**, sem treinar nem ajustar o modelo.
+
+> **Questão de pesquisa.** Em perguntas *Text-to-SQL* em português brasileiro sobre esquemas conhecidos, a
+> recuperação de demonstrações orientada à estrutura da consulta SQL aumenta a acurácia de execução em relação à
+> recuperação baseada só na similaridade da pergunta, mantidos o número de demonstrações e o orçamento de contexto?
+
+## Como funciona
+
+O *framework* recupera demonstrações de uma base vetorial (Qdrant) e monta o *prompt* para um modelo de pesos
+abertos (**Qwen2.5-Coder-7B-Instruct**, 4 bits). A versão completa (condição C4) faz a recuperação em duas etapas:
+
+![Fluxo da recuperação em duas etapas](docs/img/fluxo_c4.png)
+
+1. **Busca vetorial** pela pergunta delexicalizada (números, datas e trechos entre aspas viram marcadores);
+2. **Consulta preliminar** gerada pelo próprio modelo, sem exemplos;
+3. **Assinatura estrutural** dessa consulta (junções, agregações, agrupamentos, subconsultas…);
+4. **Reordenação** dos candidatos: `score = λ·sim_pergunta + (1−λ)·sim_estrutural`;
+5. **Geração** da consulta final com as *k* melhores demonstrações.
+
+Cinco condições isolam o efeito de cada peça:
+
+| Condição | Demonstrações no *prompt* | Papel no experimento |
 |---|---|---|
-| C0 | nenhuma | ponto de partida do modelo no ambiente |
-| C1 | *k* exemplos fixos do banco | separa "ver o domínio" de "receber exemplo pertinente" |
-| C2 | *top-k* por similaridade da pergunta original | **comparação principal** |
-| C3 | *top-k* por similaridade da pergunta delexicalizada | método da comparação primária após a validação |
-| C4 | recuperação em duas etapas | análise de componente; preserva H1 original |
+| **C0** | nenhuma | ponto de partida do modelo |
+| **C1** | *k* exemplos fixos do banco | separa "ver o domínio" de "receber o exemplo certo" |
+| **C2** | *k* mais próximos pela pergunta original | linha de base da literatura |
+| **C3** | *k* mais próximos pela pergunta delexicalizada | comparação primária (C3 × C2) |
+| **C4** | duas etapas, com reordenação estrutural | hipótese original H1 (C4 × C2) |
+
+## Principais resultados
+
+Conjunto de teste: **471 perguntas** do *Spider* (recorte de 17 bancos), pareadas em português (tradução de
+José e Cozman, 2021) e em inglês. Desfecho: acurácia de execução (EX) pelo avaliador oficial do *Spider*.
+
+| | C0 | C1 | C2 | C3 | C4 |
+|---|---|---|---|---|---|
+| **EX em português (%)** | 66,9 | 70,1 | 74,7 | 75,6 | 76,0 |
+| **EX em inglês (%)** | 74,9 | 77,7 | 79,2 | 80,7 | 79,8 |
+| ***Tokens* de entrada (PT)** | 465 | 690 | 704 | 706 | 1.166 |
+| **Latência mediana (s)** | 2,04 | 2,32 | 2,35 | 2,35 | 4,42 |
+
+- **Recuperar demonstrações do próprio banco funciona:** +8,7 pp de C3 sobre C0 em português (IC 95%: +5,3 a +12,1).
+- **A escolha pela estrutura não superou a escolha pela pergunta:** C4 − C2 = +1,27 pp (IC 95%: −1,27 a +3,82) — H1 não corroborada; C4 custa 65% mais *tokens* e uma chamada extra ao modelo.
+- **Comparação primária inconclusiva:** C3 − C2 = +0,85 pp (IC 95%: 0,00 a 1,91; Holm p = 0,438), como previsto antes do teste.
+- **Português × inglês:** a diferença cai de 8,1 pp (sem exemplos) para 3,8–5,1 pp com recuperação — quase toda nas perguntas cujos valores foram traduzidos (o banco guarda "Accounting", a pergunta diz "Contabilidade").
+
+![Diferença entre idiomas por estrato de literal traduzido](docs/img/literal_idiomas.png)
+
+**Na prática:** com pares pergunta–SQL validados do próprio banco, recuperar 4 exemplos pela similaridade da
+pergunta (C2 ou C3) dá a melhor relação entre acurácia e custo; a reordenação estrutural não compensou.
+
+<details>
+<summary>Mais figuras: contrastes pareados e acurácia × custo</summary>
+
+![Contrastes pareados](docs/img/efeitos_pareados.png)
+![Acurácia e custo](docs/img/acuracia_custo.png)
+
+</details>
+
+## Rigor experimental
+
+- **Teste selado por código:** a geração sobre o conjunto de teste só roda depois de um registro de congelamento
+  (configuração, revisões do código e dos modelos, plano de análise e poder estatístico), gravado em 14/11/2026.
+- **Hipóteses registradas antes do teste** e redesignação documentada (cronologia abaixo).
+- **Sem vazamento:** partição por família de consulta; auditoria automática entre base, validação e teste.
+- **Avaliação oficial do Spider** (`test-suite-sql-eval@e97acc5`), McNemar exato, *bootstrap* pareado
+  estratificado por banco e correção de Holm.
+- **Tudo rastreável:** os registros por pergunta estão em [`resultados/confirmatorio/`](resultados/confirmatorio/README.md),
+  e todas as tabelas e figuras da monografia saem de scripts a partir deles.
+
+![Cronologia do protocolo experimental](docs/img/protocolo_experimental.png)
+
+## Estrutura do repositório
+
+```
+src/tcc_rag/            código do framework e do experimento (linha de comando: tcc-rag)
+configs/                configurações; confirmatorio.yaml é a congelada (k=4, N=25, λ=0,95)
+scripts/                análise local, tabelas e figuras da monografia, apêndices
+scripts/colab/          roteiros executados no Google Colab (GPU T4)
+notebooks/              notebook da rodada confirmatória
+resultados/confirmatorio/  registros da rodada: manifesto, congelamento, execuções e análises
+tests/                  invariantes do protocolo (vazamento, prompt, avaliador, sandbox)
+docs/img/               figuras usadas neste README
+```
+
+## Reproduzir os resultados (sem GPU)
+
+```bash
+python -m venv .venv && source .venv/bin/activate
+pip install -e ".[hf,dev]"
+# baixe o Spider 1.0 em data/spider/ (ver "Dados" abaixo)
+python scripts/analise_local.py resultados/confirmatorio/artifacts data/spider test analise-test.json
+python scripts/tabelas_cap5.py resultados/confirmatorio/artifacts/analise/analise-val-a99f7394fedc945b.json analise-test.json saida/
+python scripts/figuras/resultados.py analise-test.json saida/
+```
+
+Para gerar tudo de novo com GPU, use `notebooks/confirmatorio.ipynb` (detalhes em "Rodada confirmatória").
+
+## Como citar
+
+```bibtex
+@misc{kenor2026frameworkrag,
+  author = {Kenor, Vitor Eduardo de Lima},
+  title  = {Um Framework {RAG} para {Text-to-SQL}: Avaliação da Recuperação Semântica e Estrutural
+            de Demonstrações em Português Brasileiro e Inglês},
+  year   = {2026},
+  note   = {Trabalho de Conclusão de Curso (Bacharelado em Ciência da Computação),
+            Universidade Tecnológica Federal do Paraná, Santa Helena},
+  howpublished = {\url{https://github.com/VitorEduardoLimaKenor/TCC2}}
+}
+```
+
+---
+
+# Guia técnico
 
 ## Instalação
 
@@ -340,20 +461,6 @@ assinatura estrutural (o campo `difficulty` do manifesto). Logs anteriores à
 E03 as gravaram como `em_correct` e `difficulty` e não têm EM oficial;
 `evaluate` mostra "--" no EM desses logs e recusa misturá-los com logs novos.
 
-## Ordem de trabalho
-
-O avaliador vem antes do RAG. Enquanto `tcc-rag run --conditions C0` não
-produzir log completo com EX, latência e tokens, não vale construir o
-recuperador — qualquer melhoria seria invisível.
-
-1. `prepare` até a porta de decisão: há bancos com famílias suficientes?
-2. `partition` + `leakage` até o relatório sair limpo.
-3. `run --conditions C0` e a rodada de calibração contra um número publicado.
-4. `index`, depois C1, C2, C3.
-5. C4.
-6. Validação: varredura de `k`, `n_candidates`, `lambda_question`. Congelar.
-7. Teste confirmatório, sem reajuste.
-
 ## O que os testes protegem
 
 Não são testes de acurácia. São as invariantes que, se quebrarem, invalidam o
@@ -403,18 +510,3 @@ src/tcc_rag/
   report/
     tables.py         tabelas LaTeX (versão inicial; as do Cap. 5 vêm de scripts/tabelas_cap5.py)
 ```
-
-## No Colab e no Kaggle
-
-Não escreva o experimento dentro do *notebook*. O *notebook* é isto:
-
-```python
-!git clone https://github.com/<usuario>/<repo>.git
-%cd <repo>
-!pip install -q -e ".[vllm]"
-from google.colab import drive; drive.mount('/content/drive')
-!tcc-rag run --config configs/frozen.yaml --split test
-```
-
-O Qdrant não precisa de Docker lá: `qdrant.mode: local` guarda o índice num
-diretório. Aponte-o para o Drive e ele sobrevive entre sessões.
